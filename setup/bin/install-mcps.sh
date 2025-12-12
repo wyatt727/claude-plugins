@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # install-mcps.sh - Install MCP servers at PROJECT LEVEL for Claude Code
-# Creates/updates .mcp.json at project root (version-controlled, team-shared)
+# Creates:
+#   - .mcp.json (MCP server configs, version-controlled, team-shared)
+#   - .claude/settings.json (auto-approves project MCP servers)
 # Usage: ./install-mcps.sh [--disable server1,server2] [--only server1,server2] [--force]
 
 set -e

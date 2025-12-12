@@ -1,0 +1,9 @@
+{
+  "name": "setup",
+  "version": "1.0.0",
+  "description": "Project setup wizard that creates optimized CLAUDE.md files following best practices",
+  "author": {
+    "name": "Claude Code Plugins"
+  },
+  "keywords": ["setup", "claude-md", "initialization", "onboarding"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "wyatt727",
+  "owner": {
+    "name": "wyatt727"
+  },
+  "plugins": [
+    {
+      "name": "setup",
+      "source": "./setup",
+      "description": "Project initialization wizard that creates optimized CLAUDE.md files following HumanLayer's best practices",
+      "version": "1.0.0"
+    }
+  ]
+}

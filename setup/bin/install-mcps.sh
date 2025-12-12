@@ -37,8 +37,9 @@ while [[ $# -gt 0 ]]; do
             cat << 'EOF'
 Usage: install-mcps.sh [OPTIONS]
 
-Install MCP servers at PROJECT LEVEL (.mcp.json) for Claude Code.
-This creates a version-controlled config that can be shared with your team.
+Install MCP servers at PROJECT LEVEL for Claude Code.
+Creates .mcp.json (version-controlled, team-shared) and
+.claude/settings.json (auto-approves project MCP servers).
 
 Options:
   -h, --help                   Show this help

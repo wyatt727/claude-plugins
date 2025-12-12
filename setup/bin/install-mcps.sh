@@ -29,7 +29,6 @@ DISABLE_SERVERS=""
 ONLY_SERVERS=""
 FORCE_REINSTALL=false
 DIAGNOSE_MODE=false
-UNINSTALL_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -37,7 +36,6 @@ while [[ $# -gt 0 ]]; do
         --only)      ONLY_SERVERS="$2"; shift 2 ;;
         --force)     FORCE_REINSTALL=true; shift ;;
         --diagnose)  DIAGNOSE_MODE=true; shift ;;
-        --uninstall) UNINSTALL_MODE=true; shift ;;
         -h|--help)
             cat << 'EOF'
 Usage: install-mcps.sh [OPTIONS]

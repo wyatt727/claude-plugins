@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# install-mcps.sh - Install/uninstall MCP servers at PROJECT LEVEL for Claude Code
+# install-mcps.sh - Install MCP servers at PROJECT LEVEL for Claude Code
 # Creates:
 #   - .mcp.json (MCP server configs, version-controlled, team-shared)
 #   - .claude/settings.json (auto-approves project MCP servers)
-# Usage: ./install-mcps.sh [--disable server1,server2] [--only server1,server2] [--force] [--uninstall]
+# Usage: ./install-mcps.sh [--disable server1,server2] [--only server1,server2] [--force]
+# Uninstall: Use `/setup --uninstall` for smart surgical removal
 
 set -e
 

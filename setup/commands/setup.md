@@ -14,27 +14,36 @@ Initialize this project with an optimized CLAUDE.md file following HumanLayer's 
 
 If user passed `--uninstall` OR user's message contains uninstall intent (e.g., "uninstall", "remove mcps", "undo setup", "clean up"):
 
-1. **Scan for setup artifacts** - Check which of these exist:
-   - `.mcp.json` (MCP server configs)
-   - `.claude/settings.json` (auto-approval settings)
-   - `.serena/` (serena code index)
-   - `docs/tools/` (MCP tool guides)
-   - `CLAUDE.md` (project instructions)
+1. **Scan for setup artifacts** - Check each item exists AND was created by setup:
 
-2. **If nothing found**: Report "No setup artifacts found. Nothing to uninstall." and exit.
+   | File | Exists? | Created by setup if... |
+   |------|---------|------------------------|
+   | `.mcp.json` | Check | Contains any of: `exa`, `serena`, `playwright`, `context7`, `sequential-thinking`, `server-memory` |
+   | `.claude/settings.json` | Check | Contains `enableAllProjectMcpServers` |
+   | `.serena/` | Check | Directory exists (always created by serena indexing) |
+   | `docs/tools/` | Check | Contains files matching plugin's `resources/tool-docs/` (e.g., `serena.md`, `context7.md`) |
+   | `CLAUDE.md` | Check | Contains "MCP Tools" section OR references `@docs/tools/` |
 
-3. **Present findings** using AskUserQuestion:
-   - "Found these setup artifacts. Select what to remove:"
-   - List ONLY items that actually exist
+2. **Build findings list** with details:
+   - For each item, note what was found (e.g., ".mcp.json with 6 MCP servers configured")
+   - For `.mcp.json`, list which servers are configured
+   - For `docs/tools/`, list which guide files exist
+
+3. **If nothing found**: Report "No setup artifacts found. Nothing to uninstall." and exit.
+
+4. **Present findings** using AskUserQuestion:
+   - "Found these setup artifacts:"
+   - Show detailed findings from step 2
+   - "Select what to remove:"
    - Use `multiSelect: true` so user can choose specific items
-   - Include "All of the above" as first option
+   - Include "All of the above" as first option if multiple items found
 
-4. **Remove selected items**:
+5. **Remove selected items**:
    - For `.mcp.json`, `.claude/settings.json`, `.serena/`: Run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall`
    - For `docs/tools/`: `rm -rf docs/tools` (and `rmdir docs` if empty)
    - For `CLAUDE.md`: `rm CLAUDE.md`
 
-5. **Report** what was removed and exit.
+6. **Report** what was removed and exit.
 
 **Do not continue to other phases if uninstalling.**
 

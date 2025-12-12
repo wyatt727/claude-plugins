@@ -316,7 +316,9 @@ echo "===================================="
 log_success "MCP Configuration Complete!"
 echo "===================================="
 echo ""
-log_info "Created: .mcp.json"
+log_info "Created files:"
+echo "  - .mcp.json (MCP server configs)"
+echo "  - .claude/settings.json (auto-approval)"
 echo ""
 
 # Show summary

@@ -133,6 +133,8 @@ uninstall() {
 
     echo ""
     log_info "Uninstalling MCP configuration from: $PROJECT_DIR"
+    log_warning "This performs FULL removal of files created by install-mcps.sh"
+    log_info "For surgical removal (preserving user content), use: /setup --uninstall"
     echo ""
 
     # Remove .mcp.json

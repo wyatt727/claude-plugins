@@ -1,40 +1,34 @@
-# Claude Plugins
+# claude-plugins
 
-Personal workspace for developing and testing Claude Code plugins.
+A Claude Code plugin marketplace containing plugins for extending Claude Code functionality.
 
 ## Tech Stack
 
-- Bash (scripts)
-- Markdown (commands, skills, documentation)
-- YAML/JSON (plugin manifests, configuration)
+- Language: Bash, Markdown
+- Configuration: JSON (plugin manifests)
 
 ## Project Structure
 
 ```
-setup/                  # Main setup plugin
-  bin/                  # Shell scripts (install-mcps.sh)
-  commands/             # Slash command definitions
-  skills/               # Skill definitions
-  resources/            # Static resources (tool docs)
-docs/tools/             # MCP tool usage guides
-.claude-plugin/         # Marketplace metadata
-```
-
-## Commands
-
-```bash
-# Test a plugin locally
-claude --plugin ./setup
-
-# Run the setup command
-/setup
+.claude-plugin/           # Marketplace configuration
+setup/                    # Main plugin (project setup wizard)
+  bin/                    # Executable scripts
+  commands/               # Slash command definitions
+  skills/                 # Skill definitions
+  resources/              # Static resources (tool docs)
 ```
 
 ## MCP Tools
 
-Consult @docs/tools/README.md for MCP tool usage guides.
+Consult these files for MCP server usage:
+- @docs/tools/README.md - When to use which MCP tool
+- @docs/tools/serena.md - Semantic code navigation
+- @docs/tools/context7.md - Library documentation lookup
+- @docs/tools/exa.md - Web search and research
+- @docs/tools/playwright.md - Browser automation
+- @docs/tools/sequential-thinking.md - Transparent reasoning
 
-Available tools: serena, playwright, context7, exa, sequential-thinking, server-memory
+Also available: **server-memory** - Persistent memory across sessions
 
 ## File Headers
 

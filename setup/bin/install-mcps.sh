@@ -1,11 +1,8 @@
 #!/bin/bash
 
-# install-mcps.sh - Install/Uninstall MCP servers at PROJECT LEVEL for Claude Code
-# Creates:
-#   - .mcp.json (MCP server configs, version-controlled, team-shared)
-#   - .claude/settings.json (auto-approves project MCP servers)
+# install-mcps.sh - Install MCP servers at PROJECT LEVEL for Claude Code
+# Creates/updates .mcp.json at project root (version-controlled, team-shared)
 # Usage: ./install-mcps.sh [--disable server1,server2] [--only server1,server2] [--force]
-# Uninstall: ./install-mcps.sh --uninstall [--keep-user-servers]
 
 set -e
 
@@ -30,7 +27,7 @@ ONLY_SERVERS=""
 FORCE_REINSTALL=false
 DIAGNOSE_MODE=false
 UNINSTALL_MODE=false
-KEEP_USER_SERVERS=true
+REMOVE_ALL_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -39,14 +36,13 @@ while [[ $# -gt 0 ]]; do
         --force)     FORCE_REINSTALL=true; shift ;;
         --diagnose)  DIAGNOSE_MODE=true; shift ;;
         --uninstall) UNINSTALL_MODE=true; shift ;;
-        --remove-all) KEEP_USER_SERVERS=false; shift ;;
+        --remove-all) REMOVE_ALL_MODE=true; shift ;;
         -h|--help)
             cat << 'EOF'
 Usage: install-mcps.sh [OPTIONS]
 
-Install MCP servers at PROJECT LEVEL for Claude Code.
-Creates .mcp.json (version-controlled, team-shared) and
-.claude/settings.json (auto-approves project MCP servers).
+Install MCP servers at PROJECT LEVEL (.mcp.json) for Claude Code.
+This creates a version-controlled config that can be shared with your team.
 
 Options:
   -h, --help                   Show this help
@@ -54,8 +50,8 @@ Options:
   --only server1,server2       Install only specific servers
   --force                      Overwrite existing .mcp.json
   --diagnose                   Check system dependencies
-  --uninstall                  Remove all setup-installed MCP servers
-  --remove-all                 With --uninstall: also remove user-added servers
+  --uninstall                  Remove servers from .mcp.json (use with --only to specify which)
+  --remove-all                 Complete cleanup: remove .mcp.json and .claude/settings.json
 
 Available servers:
   exa                 Web search, research, company info
@@ -70,8 +66,8 @@ Examples:
   ./install-mcps.sh --only exa,context7  # Install specific servers
   ./install-mcps.sh --disable serena     # Skip serena
   ./install-mcps.sh --force              # Overwrite existing config
-  ./install-mcps.sh --uninstall          # Remove setup servers, keep user servers
-  ./install-mcps.sh --uninstall --remove-all  # Remove everything
+  ./install-mcps.sh --uninstall --only exa,serena  # Remove specific servers
+  ./install-mcps.sh --remove-all         # Complete cleanup
 EOF
             exit 0
             ;;
@@ -131,155 +127,96 @@ diagnose() {
     echo ""
 }
 
-# Uninstall MCP servers
-uninstall() {
-    log_info "Uninstalling MCP servers from: $(pwd)"
-    echo ""
+# Main
+PROJECT_DIR="$(pwd)"
+MCP_FILE="$PROJECT_DIR/.mcp.json"
+SETTINGS_DIR="$PROJECT_DIR/.claude"
+SETTINGS_FILE="$SETTINGS_DIR/settings.json"
 
-    local removed_count=0
-    local preserved_count=0
+# Handle --remove-all: complete cleanup
+if [[ "$REMOVE_ALL_MODE" == true ]]; then
+    log_info "Removing all MCP configuration from: $PROJECT_DIR"
 
-    # Setup-installed servers (these are what we installed)
-    local SETUP_SERVERS="exa sequential-thinking serena playwright context7 server-memory"
-
-    # Check .mcp.json
     if [[ -f "$MCP_FILE" ]]; then
-        if command -v jq &> /dev/null; then
-            # Get list of all servers in config
-            local all_servers=$(jq -r '.mcpServers | keys[]' "$MCP_FILE" 2>/dev/null)
-            local setup_found=""
-            local user_found=""
-
-            for server in $all_servers; do
-                if [[ " $SETUP_SERVERS " == *" $server "* ]]; then
-                    setup_found="$setup_found $server"
-                else
-                    user_found="$user_found $server"
-                fi
-            done
-
-            setup_found=$(echo "$setup_found" | xargs)  # trim
-            user_found=$(echo "$user_found" | xargs)    # trim
-
-            if [[ -n "$setup_found" ]]; then
-                log_info "Setup-installed servers found: $setup_found"
-            fi
-
-            if [[ -n "$user_found" ]]; then
-                log_info "User-added servers found: $user_found"
-            fi
-
-            # Decide what to do
-            if [[ -z "$user_found" ]] || [[ "$KEEP_USER_SERVERS" == false ]]; then
-                # Remove entire file
-                rm "$MCP_FILE"
-                log_success "Removed: .mcp.json"
-                removed_count=$((removed_count + 1))
-            elif [[ -n "$setup_found" ]]; then
-                # Surgically remove only setup servers
-                local tmp_file=$(mktemp)
-                local jq_filter=".mcpServers"
-                for server in $setup_found; do
-                    jq_filter="$jq_filter | del(.$server)"
-                done
-                jq "$jq_filter" "$MCP_FILE" | jq '{mcpServers: .}' > "$tmp_file"
-                mv "$tmp_file" "$MCP_FILE"
-                log_success "Removed setup servers from .mcp.json: $setup_found"
-                log_info "Preserved user servers: $user_found"
-                removed_count=$((removed_count + 1))
-                preserved_count=$((preserved_count + 1))
-            else
-                log_info "No setup servers found in .mcp.json"
-            fi
-        else
-            # No jq - just remove the file if user agrees
-            log_warning "jq not installed - cannot surgically remove servers"
-            if [[ "$KEEP_USER_SERVERS" == false ]]; then
-                rm "$MCP_FILE"
-                log_success "Removed: .mcp.json"
-                removed_count=$((removed_count + 1))
-            else
-                log_warning "Skipping .mcp.json removal (install jq for surgical removal)"
-            fi
-        fi
+        rm "$MCP_FILE"
+        log_success "Removed: .mcp.json"
     else
         log_info ".mcp.json not found"
     fi
 
-    # Check .claude/settings.json
-    local SETTINGS_FILE="$PROJECT_DIR/.claude/settings.json"
     if [[ -f "$SETTINGS_FILE" ]]; then
-        if command -v jq &> /dev/null; then
-            local has_enable=$(jq 'has("enableAllProjectMcpServers")' "$SETTINGS_FILE" 2>/dev/null)
-            local key_count=$(jq 'keys | length' "$SETTINGS_FILE" 2>/dev/null)
-
-            if [[ "$has_enable" == "true" ]]; then
-                if [[ "$key_count" == "1" ]]; then
-                    # Only our setting, remove entire file
-                    rm "$SETTINGS_FILE"
-                    log_success "Removed: .claude/settings.json"
-                    removed_count=$((removed_count + 1))
-                    # Remove .claude dir if empty
-                    rmdir "$PROJECT_DIR/.claude" 2>/dev/null && log_info "Removed empty: .claude/"
-                else
-                    # Other settings exist, just remove our key
-                    local tmp_file=$(mktemp)
-                    jq 'del(.enableAllProjectMcpServers)' "$SETTINGS_FILE" > "$tmp_file"
-                    mv "$tmp_file" "$SETTINGS_FILE"
-                    log_success "Removed enableAllProjectMcpServers from .claude/settings.json"
-                    log_info "Preserved other settings in .claude/settings.json"
-                    removed_count=$((removed_count + 1))
-                    preserved_count=$((preserved_count + 1))
-                fi
-            else
-                log_info ".claude/settings.json has no setup settings"
-            fi
-        else
-            log_warning "jq not installed - cannot check .claude/settings.json"
-        fi
+        rm "$SETTINGS_FILE"
+        log_success "Removed: .claude/settings.json"
+        # Remove .claude dir if empty
+        rmdir "$SETTINGS_DIR" 2>/dev/null && log_info "Removed empty .claude/ directory" || true
     else
         log_info ".claude/settings.json not found"
     fi
 
-    # Remove .serena directory (always fully created by setup)
+    # Remove Serena index if present
     if [[ -d "$PROJECT_DIR/.serena" ]]; then
         rm -rf "$PROJECT_DIR/.serena"
-        log_success "Removed: .serena/"
-        removed_count=$((removed_count + 1))
-    else
-        log_info ".serena/ not found"
+        log_success "Removed: .serena/ (Serena index)"
     fi
 
     echo ""
-    echo "===================================="
-    log_success "Uninstall Complete!"
-    echo "===================================="
-    echo ""
-
-    if [[ $removed_count -eq 0 ]]; then
-        log_info "No setup artifacts found to remove."
-    else
-        log_info "Removed $removed_count item(s)"
-        if [[ $preserved_count -gt 0 ]]; then
-            log_info "Preserved $preserved_count item(s) with user content"
-        fi
-    fi
-
-    echo ""
-    log_info "Next steps:"
-    echo "  - Restart Claude Code to unload the MCP servers"
-    echo ""
-
+    log_success "Cleanup complete!"
     exit 0
-}
+fi
 
-# Main
-PROJECT_DIR="$(pwd)"
-MCP_FILE="$PROJECT_DIR/.mcp.json"
-
-# Handle uninstall mode
+# Handle --uninstall: remove servers from .mcp.json
 if [[ "$UNINSTALL_MODE" == true ]]; then
-    uninstall
+    log_info "Uninstalling MCP servers from: $PROJECT_DIR"
+
+    if [[ ! -f "$MCP_FILE" ]]; then
+        log_error ".mcp.json not found - nothing to uninstall"
+        exit 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        log_error "jq is required for uninstall. Install with: brew install jq"
+        exit 1
+    fi
+
+    # Determine which servers to remove
+    if [[ -n "$ONLY_SERVERS" ]]; then
+        # Remove only specified servers
+        SERVERS_TO_REMOVE="$ONLY_SERVERS"
+    else
+        # Remove all our managed servers (default)
+        SERVERS_TO_REMOVE="$SERVERS"
+    fi
+
+    # Remove each server
+    REMOVED_COUNT=0
+    for server in $(echo "$SERVERS_TO_REMOVE" | tr ',' ' '); do
+        if jq -e ".mcpServers.\"$server\"" "$MCP_FILE" > /dev/null 2>&1; then
+            jq "del(.mcpServers.\"$server\")" "$MCP_FILE" > "$MCP_FILE.tmp" && mv "$MCP_FILE.tmp" "$MCP_FILE"
+            log_success "Removed: $server"
+            ((REMOVED_COUNT++))
+        else
+            log_info "Server not found: $server"
+        fi
+    done
+
+    # Update .claude/settings.json to remove enabled servers
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        for server in $(echo "$SERVERS_TO_REMOVE" | tr ',' ' '); do
+            if jq -e ".enabledMcpjsonServers | index(\"$server\")" "$SETTINGS_FILE" > /dev/null 2>&1; then
+                jq ".enabledMcpjsonServers = (.enabledMcpjsonServers | map(select(. != \"$server\")))" "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+            fi
+        done
+        log_info "Updated .claude/settings.json"
+    fi
+
+    # Check if .mcp.json is now empty
+    if [[ $(jq '.mcpServers | length' "$MCP_FILE") -eq 0 ]]; then
+        log_warning ".mcp.json now has no servers. Consider using --remove-all to clean up completely."
+    fi
+
+    echo ""
+    log_success "Uninstalled $REMOVED_COUNT server(s)"
+    exit 0
 fi
 
 log_info "Installing MCP servers for: $PROJECT_DIR"
@@ -444,29 +381,41 @@ cat >> "$MCP_FILE" << 'FOOTER'
 }
 FOOTER
 
-# Create .claude/settings.json to auto-approve project MCP servers
-SETTINGS_DIR="$PROJECT_DIR/.claude"
-SETTINGS_FILE="$SETTINGS_DIR/settings.json"
+# Generate .claude/settings.json to enable the MCP servers
+log_info "Generating .claude/settings.json..."
+mkdir -p "$SETTINGS_DIR"
 
-if [[ ! -d "$SETTINGS_DIR" ]]; then
-    mkdir -p "$SETTINGS_DIR"
-    log_info "Created: .claude/"
-fi
+# Build list of installed servers
+INSTALLED_SERVERS=()
+for server in $SERVERS; do
+    if should_install "$server"; then
+        if [[ "$server" == "serena" ]] && ! command -v uvx &> /dev/null; then
+            continue
+        elif [[ "$server" == "exa" ]] && [[ -z "$EXA_API_KEY" ]]; then
+            continue
+        fi
+        INSTALLED_SERVERS+=("$server")
+    fi
+done
 
-if [[ ! -f "$SETTINGS_FILE" ]]; then
-    cat > "$SETTINGS_FILE" << 'SETTINGS'
-{
-  "enableAllProjectMcpServers": true
-}
-SETTINGS
-    log_success "Created: .claude/settings.json (auto-approves MCP servers)"
-else
-    # Check if enableAllProjectMcpServers is already set
-    if ! grep -q "enableAllProjectMcpServers" "$SETTINGS_FILE" 2>/dev/null; then
-        log_warning ".claude/settings.json exists but missing enableAllProjectMcpServers"
-        log_info "  Add manually: \"enableAllProjectMcpServers\": true"
+# Create settings.json with enabledMcpjsonServers
+if [[ ${#INSTALLED_SERVERS[@]} -gt 0 ]]; then
+    # Build JSON array of server names
+    JSON_ARRAY=$(printf '"%s",' "${INSTALLED_SERVERS[@]}")
+    JSON_ARRAY="[${JSON_ARRAY%,}]"  # Remove trailing comma and wrap in brackets
+
+    if [[ -f "$SETTINGS_FILE" ]] && command -v jq &> /dev/null; then
+        # Merge with existing settings.json
+        jq --argjson servers "$JSON_ARRAY" '.enabledMcpjsonServers = $servers' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+        log_success "Updated: .claude/settings.json (merged with existing)"
     else
-        log_info ".claude/settings.json already configured"
+        # Create new settings.json
+        cat > "$SETTINGS_FILE" << EOF
+{
+  "enabledMcpjsonServers": $JSON_ARRAY
+}
+EOF
+        log_success "Created: .claude/settings.json"
     fi
 fi
 
@@ -475,9 +424,8 @@ echo "===================================="
 log_success "MCP Configuration Complete!"
 echo "===================================="
 echo ""
-log_info "Created files:"
-echo "  - .mcp.json (MCP server configs)"
-echo "  - .claude/settings.json (auto-approval)"
+log_info "Created: .mcp.json"
+log_info "Created: .claude/settings.json"
 echo ""
 
 # Show summary

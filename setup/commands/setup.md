@@ -12,41 +12,27 @@ Initialize this project with an optimized CLAUDE.md file following HumanLayer's 
 
 ## Phase 0: Check for Uninstall Mode
 
-If user passed `--uninstall` OR user's message contains uninstall intent (e.g., "uninstall", "remove mcps", "undo setup", "clean up"):
+If user passed `--uninstall`:
+1. Use AskUserQuestion: "What would you like to uninstall?"
+   - "Remove specific MCP servers" → Ask which servers, then run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall --only <servers>`
+   - "Remove all MCP servers" → Run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall`
+   - "Complete cleanup (remove all config files)" → Run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --remove-all`
 
-### Step 1: Run the uninstall script
+2. Verify the uninstall:
+   ```bash
+   # Check .mcp.json status
+   cat .mcp.json 2>/dev/null || echo "No .mcp.json found"
 
-Run the shell script to handle MCP server removal:
-```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall
-```
+   # Check .claude/settings.json status
+   cat .claude/settings.json 2>/dev/null || echo "No .claude/settings.json found"
 
-This script surgically removes:
-- Setup-installed servers from `.mcp.json` (preserves user-added servers)
-- `enableAllProjectMcpServers` from `.claude/settings.json` (preserves other settings)
-- `.serena/` directory
+   # Check MCP servers loaded in Claude
+   claude mcp list 2>/dev/null | head -20
+   ```
 
-### Step 2: Handle remaining artifacts
+3. Report results and remind user to restart Claude Code to apply changes.
 
-Check for and remove these additional setup artifacts:
-
-**`docs/tools/`**:
-- Check if directory exists
-- Remove only setup files: `README.md`, `serena.md`, `context7.md`, `exa.md`, `playwright.md`, `sequential-thinking.md`
-- Preserve user-added files
-- Remove directory if empty after
-
-**`CLAUDE.md`**:
-- Check if file contains `## MCP Tools` section
-- If it does, use Edit tool to remove only that section (from `## MCP Tools` to next `##` or EOF)
-- Preserve all other content
-- If file becomes empty/only whitespace, delete it
-
-### Step 3: Report
-
-Summarize what was removed. Remind user to restart Claude Code.
-
-**Do not continue to other phases if uninstalling.**
+4. Exit (don't continue with setup phases).
 
 ## Phase 1: Check for Existing CLAUDE.md
 
@@ -66,6 +52,17 @@ claude mcp list 2>/dev/null | grep -E "^(serena|playwright|context7|exa):" && ec
 If "MCP_NOT_CONFIGURED", use AskUserQuestion:
 - "Yes, install MCP tools (Recommended)" → Run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh"`
 - "No, skip MCP setup" → Continue without MCP tools
+
+After install completes, verify:
+```bash
+# Verify .mcp.json was created with servers
+cat .mcp.json 2>/dev/null | head -30
+
+# Verify .claude/settings.json has enabled servers
+cat .claude/settings.json 2>/dev/null
+```
+
+If both files exist and contain server configurations, the install was successful.
 
 **Track which MCP tools are installed** - this affects Phase 5.
 
@@ -171,11 +168,23 @@ Maximum parallelization = maximum speed.
 
 1. Read back CLAUDE.md and count lines
 2. Verify it follows best practices (lean, no placeholders, universally applicable)
-3. Report what was created:
+3. If MCP tools were installed, verify configuration:
+   ```bash
+   # Show installed servers
+   cat .mcp.json 2>/dev/null | jq '.mcpServers | keys' 2>/dev/null || cat .mcp.json
+
+   # Show enabled servers
+   cat .claude/settings.json 2>/dev/null
+   ```
+4. Report what was created:
    - CLAUDE.md (X lines)
    - docs/tools/ files (if created)
-   - MCP tools installed (if any)
+   - MCP configuration files (if installed):
+     - `.mcp.json` - Server definitions
+     - `.claude/settings.json` - Enabled servers
 
-4. Remind user:
+5. Remind user:
+   - "Restart Claude Code to load MCP servers" (if installed)
    - "Add project-specific conventions as you discover them"
    - "Keep CLAUDE.md lean - use docs/ for detailed guidance"
+   - "To uninstall MCP tools later: `/setup --uninstall`"

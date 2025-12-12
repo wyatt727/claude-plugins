@@ -69,7 +69,95 @@ The `/setup` command:
 /setup              # Full interactive setup
 /setup --skip-mcps  # Skip MCP tools installation
 /setup --force      # Overwrite existing CLAUDE.md without asking
+/setup --uninstall  # Uninstall MCP tools (interactive)
 ```
+
+### Installing MCP Tools
+
+The installer creates two files:
+- `.mcp.json` - Server configurations (version-controlled, share with team)
+- `.claude/settings.json` - Enables the servers for Claude Code
+
+#### Direct Script Usage
+
+```bash
+# Install all servers
+./bin/install-mcps.sh
+
+# Install specific servers only
+./bin/install-mcps.sh --only exa,context7
+
+# Skip specific servers
+./bin/install-mcps.sh --disable serena
+
+# Overwrite existing config
+./bin/install-mcps.sh --force
+
+# Check dependencies first
+./bin/install-mcps.sh --diagnose
+```
+
+#### Verifying Install
+
+After installing, verify with:
+
+```bash
+# Check .mcp.json was created with servers
+cat .mcp.json | jq '.mcpServers | keys'
+
+# Check servers are enabled in settings
+cat .claude/settings.json | jq '.enabledMcpjsonServers'
+
+# Check what Claude sees (requires restart)
+claude mcp list
+```
+
+**Important**: Restart Claude Code after installing for servers to load.
+
+### Uninstalling MCP Tools
+
+The `--uninstall` flag provides interactive options for removing MCP servers:
+
+```bash
+/setup --uninstall
+```
+
+You'll be asked what to uninstall:
+- **Remove specific MCP servers** - Choose which servers to remove
+- **Remove all MCP servers** - Removes all managed servers but keeps config files
+- **Complete cleanup** - Removes `.mcp.json`, `.claude/settings.json`, and `.serena/`
+
+#### Direct Script Usage
+
+You can also run the install script directly for more control:
+
+```bash
+# Remove specific servers
+./bin/install-mcps.sh --uninstall --only exa,serena
+
+# Remove all managed servers (keeps config file structure)
+./bin/install-mcps.sh --uninstall
+
+# Complete cleanup (removes all config files)
+./bin/install-mcps.sh --remove-all
+```
+
+#### Verifying Uninstall
+
+After uninstalling, verify with:
+
+```bash
+# Check remaining servers in .mcp.json
+cat .mcp.json
+
+# Check enabled servers in settings
+cat .claude/settings.json
+
+# Check what Claude sees (requires restart)
+claude mcp list
+```
+
+**Important**: Restart Claude Code after uninstalling for changes to take effect.
 
 ## What Gets Created
 

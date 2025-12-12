@@ -168,21 +168,6 @@ uninstall() {
         log_info "Skipped: .serena/ (not found)"
     fi
 
-    # Remove docs/tools/ directory (created by setup command)
-    if [[ -d "$PROJECT_DIR/docs/tools" ]]; then
-        rm -rf "$PROJECT_DIR/docs/tools"
-        log_success "Removed: docs/tools/ (MCP tool guides)"
-        ((removed_count++))
-
-        # Remove docs/ directory if empty
-        if [[ -d "$PROJECT_DIR/docs" ]] && [[ -z "$(ls -A "$PROJECT_DIR/docs")" ]]; then
-            rmdir "$PROJECT_DIR/docs"
-            log_success "Removed: docs/ (empty directory)"
-        fi
-    else
-        log_info "Skipped: docs/tools/ (not found)"
-    fi
-
     echo ""
     echo "===================================="
     if [[ $removed_count -gt 0 ]]; then

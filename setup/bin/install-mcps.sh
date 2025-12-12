@@ -54,9 +54,8 @@ Options:
   --only server1,server2       Install only specific servers
   --force                      Overwrite existing .mcp.json
   --diagnose                   Check system dependencies
-
-Uninstall:
-  Use `/setup --uninstall` for smart surgical removal that preserves user content.
+  --uninstall                  Remove all setup-installed MCP servers
+  --remove-all                 With --uninstall: also remove user-added servers
 
 Available servers:
   exa                 Web search, research, company info

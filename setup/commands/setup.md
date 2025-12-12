@@ -14,24 +14,27 @@ Initialize this project with an optimized CLAUDE.md file following HumanLayer's 
 
 If user passed `--uninstall` OR user's message contains uninstall intent (e.g., "uninstall", "remove mcps", "undo setup", "clean up"):
 
-1. **Confirm with user** using AskUserQuestion:
-   - "Are you sure you want to uninstall? This will remove:"
-     - `.mcp.json` (MCP server configs)
-     - `.claude/settings.json` (auto-approval settings)
-     - `.serena/` (code index)
-     - `docs/tools/` (MCP tool guides)
-   - Options: "Yes, uninstall everything" / "No, cancel"
+1. **Scan for setup artifacts** - Check which of these exist:
+   - `.mcp.json` (MCP server configs)
+   - `.claude/settings.json` (auto-approval settings)
+   - `.serena/` (serena code index)
+   - `docs/tools/` (MCP tool guides)
+   - `CLAUDE.md` (project instructions)
 
-2. If confirmed, run:
-   ```bash
-   "${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall
-   ```
+2. **If nothing found**: Report "No setup artifacts found. Nothing to uninstall." and exit.
 
-3. Ask if they also want to remove CLAUDE.md:
-   - "Do you also want to remove CLAUDE.md?"
-   - If yes: `rm CLAUDE.md`
+3. **Present findings** using AskUserQuestion:
+   - "Found these setup artifacts. Select what to remove:"
+   - List ONLY items that actually exist
+   - Use `multiSelect: true` so user can choose specific items
+   - Include "All of the above" as first option
 
-4. Report what was removed and exit.
+4. **Remove selected items**:
+   - For `.mcp.json`, `.claude/settings.json`, `.serena/`: Run `"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall`
+   - For `docs/tools/`: `rm -rf docs/tools` (and `rmdir docs` if empty)
+   - For `CLAUDE.md`: `rm CLAUDE.md`
+
+5. **Report** what was removed and exit.
 
 **Do not continue to other phases if uninstalling.**
 

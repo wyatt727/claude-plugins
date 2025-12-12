@@ -126,63 +126,6 @@ diagnose() {
     echo ""
 }
 
-# Uninstall MCP configuration
-uninstall() {
-    local PROJECT_DIR="$(pwd)"
-    local removed_count=0
-
-    echo ""
-    log_info "Uninstalling MCP configuration from: $PROJECT_DIR"
-    log_warning "This performs FULL removal of files created by install-mcps.sh"
-    log_info "For surgical removal (preserving user content), use: /setup --uninstall"
-    echo ""
-
-    # Remove .mcp.json
-    if [[ -f "$PROJECT_DIR/.mcp.json" ]]; then
-        rm "$PROJECT_DIR/.mcp.json"
-        log_success "Removed: .mcp.json"
-        ((removed_count++))
-    else
-        log_info "Skipped: .mcp.json (not found)"
-    fi
-
-    # Remove .claude/settings.json
-    if [[ -f "$PROJECT_DIR/.claude/settings.json" ]]; then
-        rm "$PROJECT_DIR/.claude/settings.json"
-        log_success "Removed: .claude/settings.json"
-        ((removed_count++))
-
-        # Remove .claude/ directory if empty
-        if [[ -d "$PROJECT_DIR/.claude" ]] && [[ -z "$(ls -A "$PROJECT_DIR/.claude")" ]]; then
-            rmdir "$PROJECT_DIR/.claude"
-            log_success "Removed: .claude/ (empty directory)"
-        fi
-    else
-        log_info "Skipped: .claude/settings.json (not found)"
-    fi
-
-    # Remove .serena/ directory (created by serena indexing)
-    if [[ -d "$PROJECT_DIR/.serena" ]]; then
-        rm -rf "$PROJECT_DIR/.serena"
-        log_success "Removed: .serena/ (serena index)"
-        ((removed_count++))
-    else
-        log_info "Skipped: .serena/ (not found)"
-    fi
-
-    echo ""
-    echo "===================================="
-    if [[ $removed_count -gt 0 ]]; then
-        log_success "Uninstall Complete! Removed $removed_count item(s)."
-    else
-        log_info "Nothing to uninstall."
-    fi
-    echo "===================================="
-    echo ""
-    log_info "Restart Claude Code to apply changes."
-    echo ""
-}
-
 # Main
 PROJECT_DIR="$(pwd)"
 MCP_FILE="$PROJECT_DIR/.mcp.json"

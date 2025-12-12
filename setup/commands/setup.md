@@ -1,6 +1,6 @@
 ---
 description: Initialize project with MCP tools and create optimized CLAUDE.md
-argument-hint: [--skip-mcps] [--force]
+argument-hint: [--skip-mcps] [--force] [--uninstall]
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion, WebFetch, TodoWrite
 ---
 
@@ -9,6 +9,31 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion, WebFe
 Initialize this project with an optimized CLAUDE.md file following HumanLayer's research on effective agent onboarding.
 
 **Track state throughout**: Remember what was detected/installed in each phase to inform later phases.
+
+## Phase 0: Check for Uninstall Mode
+
+If user passed `--uninstall` OR user's message contains uninstall intent (e.g., "uninstall", "remove mcps", "undo setup", "clean up"):
+
+1. **Confirm with user** using AskUserQuestion:
+   - "Are you sure you want to uninstall? This will remove:"
+     - `.mcp.json` (MCP server configs)
+     - `.claude/settings.json` (auto-approval settings)
+     - `.serena/` (code index)
+     - `docs/tools/` (MCP tool guides)
+   - Options: "Yes, uninstall everything" / "No, cancel"
+
+2. If confirmed, run:
+   ```bash
+   "${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall
+   ```
+
+3. Ask if they also want to remove CLAUDE.md:
+   - "Do you also want to remove CLAUDE.md?"
+   - If yes: `rm CLAUDE.md`
+
+4. Report what was removed and exit.
+
+**Do not continue to other phases if uninstalling.**
 
 ## Phase 1: Check for Existing CLAUDE.md
 

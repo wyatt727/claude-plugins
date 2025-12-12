@@ -285,6 +285,32 @@ cat >> "$MCP_FILE" << 'FOOTER'
 }
 FOOTER
 
+# Create .claude/settings.json to auto-approve project MCP servers
+SETTINGS_DIR="$PROJECT_DIR/.claude"
+SETTINGS_FILE="$SETTINGS_DIR/settings.json"
+
+if [[ ! -d "$SETTINGS_DIR" ]]; then
+    mkdir -p "$SETTINGS_DIR"
+    log_info "Created: .claude/"
+fi
+
+if [[ ! -f "$SETTINGS_FILE" ]]; then
+    cat > "$SETTINGS_FILE" << 'SETTINGS'
+{
+  "enableAllProjectMcpServers": true
+}
+SETTINGS
+    log_success "Created: .claude/settings.json (auto-approves MCP servers)"
+else
+    # Check if enableAllProjectMcpServers is already set
+    if ! grep -q "enableAllProjectMcpServers" "$SETTINGS_FILE" 2>/dev/null; then
+        log_warning ".claude/settings.json exists but missing enableAllProjectMcpServers"
+        log_info "  Add manually: \"enableAllProjectMcpServers\": true"
+    else
+        log_info ".claude/settings.json already configured"
+    fi
+fi
+
 echo ""
 echo "===================================="
 log_success "MCP Configuration Complete!"

@@ -277,6 +277,11 @@ uninstall() {
 PROJECT_DIR="$(pwd)"
 MCP_FILE="$PROJECT_DIR/.mcp.json"
 
+# Handle uninstall mode
+if [[ "$UNINSTALL_MODE" == true ]]; then
+    uninstall
+fi
+
 log_info "Installing MCP servers for: $PROJECT_DIR"
 log_info "Config file: .mcp.json (project-level, version-controlled)"
 echo ""

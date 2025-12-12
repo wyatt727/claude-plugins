@@ -66,6 +66,7 @@ Examples:
   ./install-mcps.sh --only exa,context7  # Install specific servers
   ./install-mcps.sh --disable serena     # Skip serena
   ./install-mcps.sh --force              # Overwrite existing config
+  ./install-mcps.sh --uninstall          # Remove all MCP configs
 EOF
             exit 0
             ;;

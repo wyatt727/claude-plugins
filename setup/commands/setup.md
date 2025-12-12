@@ -14,68 +14,37 @@ Initialize this project with an optimized CLAUDE.md file following HumanLayer's 
 
 If user passed `--uninstall` OR user's message contains uninstall intent (e.g., "uninstall", "remove mcps", "undo setup", "clean up"):
 
-### Step 1: Scan for setup artifacts
+### Step 1: Run the uninstall script
 
-Check each file and identify ONLY what setup added:
-
-| Artifact | Setup adds | Check for |
-|----------|-----------|-----------|
-| `.mcp.json` | MCP servers | Which of these exist: `exa`, `serena`, `playwright`, `context7`, `sequential-thinking`, `server-memory`. Note if OTHER servers exist (user-added). |
-| `.claude/settings.json` | `enableAllProjectMcpServers` | Is this key present? Note if OTHER settings exist (user-added). |
-| `.serena/` | Entire directory | Directory exists? (fully created by setup) |
-| `docs/tools/` | Tool guide files | Which of these exist: `README.md`, `serena.md`, `context7.md`, `exa.md`, `playwright.md`, `sequential-thinking.md`. Note if OTHER files exist (user-added). |
-| `CLAUDE.md` | "MCP Tools" section | Does file contain `## MCP Tools` section? Note if file has OTHER content (user-added). |
-
-### Step 2: Build detailed findings
-
-For each artifact, determine:
-- **Full removal**: File/dir was entirely created by setup (no user content)
-- **Partial removal**: File has both setup content AND user content
-
-Example findings:
-```
-.mcp.json: 6 setup servers (exa, serena, playwright, context7, sequential-thinking, server-memory) + 2 user servers (custom-server, another-server) → PARTIAL removal
-.claude/settings.json: enableAllProjectMcpServers only → FULL removal
-.serena/: exists → FULL removal
-docs/tools/: 5 setup files → FULL removal
-CLAUDE.md: has MCP Tools section + other content → PARTIAL removal (remove section only)
+Run the shell script to handle MCP server removal:
+```bash
+"${CLAUDE_PLUGIN_ROOT}/bin/install-mcps.sh" --uninstall
 ```
 
-### Step 3: Present findings
+This script surgically removes:
+- Setup-installed servers from `.mcp.json` (preserves user-added servers)
+- `enableAllProjectMcpServers` from `.claude/settings.json` (preserves other settings)
+- `.serena/` directory
 
-If nothing found: Report "No setup artifacts found." and exit.
+### Step 2: Handle remaining artifacts
 
-Use AskUserQuestion with `multiSelect: true`:
-- Show what will be removed vs preserved for each item
-- Let user select which items to clean up
-
-### Step 4: Remove selected items (surgically)
-
-**`.mcp.json`** - If partial:
-- Use Edit tool to remove only setup-added servers: `exa`, `serena`, `playwright`, `context7`, `sequential-thinking`, `server-memory`
-- Preserve user-added servers
-- If ALL servers were setup-added, delete entire file
-
-**`.claude/settings.json`** - If partial:
-- Use Edit tool to remove only `enableAllProjectMcpServers` line
-- Preserve other settings
-- If file becomes empty/invalid JSON, delete it
-
-**`.serena/`**: Always full removal (`rm -rf .serena`)
+Check for and remove these additional setup artifacts:
 
 **`docs/tools/`**:
+- Check if directory exists
 - Remove only setup files: `README.md`, `serena.md`, `context7.md`, `exa.md`, `playwright.md`, `sequential-thinking.md`
 - Preserve user-added files
-- If directory empty after, remove it
+- Remove directory if empty after
 
-**`CLAUDE.md`** - If partial:
-- Use Edit tool to remove only the `## MCP Tools` section (from `## MCP Tools` to next `##` or EOF)
+**`CLAUDE.md`**:
+- Check if file contains `## MCP Tools` section
+- If it does, use Edit tool to remove only that section (from `## MCP Tools` to next `##` or EOF)
 - Preserve all other content
-- If file becomes empty, delete it
+- If file becomes empty/only whitespace, delete it
 
-### Step 5: Report
+### Step 3: Report
 
-List what was removed and what was preserved. Remind user to restart Claude Code.
+Summarize what was removed. Remind user to restart Claude Code.
 
 **Do not continue to other phases if uninstalling.**
 
